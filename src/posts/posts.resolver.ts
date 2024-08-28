@@ -10,7 +10,7 @@ import {
 } from '@nestjs/graphql';
 import { findManyCursorConnection } from '@devoxa/prisma-relay-cursor-connection';
 import { PubSub } from 'graphql-subscriptions';
-import { UseGuards } from '@nestjs/common';
+import { NotFoundException, UseGuards } from '@nestjs/common';
 import { PaginationArgs } from '../common/pagination/pagination.args';
 import { UserEntity } from '../common/decorators/user.decorator';
 import { User } from '../users/models/user.model';
@@ -21,12 +21,20 @@ import { Post } from './models/post.model';
 import { PostConnection } from './models/post-connection.model';
 import { PostOrder } from './dto/post-order.input';
 import { CreatePostInput } from './dto/createPost.input';
+import { Logger } from '@nestjs/common';
+import { PostsService } from './posts.service';
+import { UpdatePostInput } from './dto/updatePost.input';
 
 const pubSub = new PubSub();
 
 @Resolver(() => Post)
 export class PostsResolver {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(PostsResolver.name);
+  constructor(
+    private prisma: PrismaService,
+    private postsService : PostsService
+
+  ) { }
 
   @Subscription(() => Post)
   postCreated() {
@@ -41,7 +49,7 @@ export class PostsResolver {
   ) {
     const newPost = this.prisma.post.create({
       data: {
-        published: true,
+        published: false,
         title: data.title,
         content: data.content,
         authorId: user.id,
@@ -102,8 +110,21 @@ export class PostsResolver {
   }
 
   @Query(() => Post)
-  async post(@Args() id: PostIdArgs) {
-    return this.prisma.post.findUnique({ where: { id: id.postId } });
+  async post(@Args('id') id: string): Promise<Post> {
+    const post = await this.prisma.post.findUnique({ where: { id } });
+    if (!post) {
+      throw new NotFoundException(`Post with ID ${id} not found`);
+    }
+    return post;
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Post)
+  async updatePost(
+    @Args('id') id: PostIdArgs,
+    @Args('data') data: UpdatePostInput,
+  ): Promise<Post> {
+    return this.postsService.updatePost(id, data);
   }
 
   @ResolveField('author', () => User)

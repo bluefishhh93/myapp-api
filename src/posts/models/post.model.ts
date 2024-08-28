@@ -1,6 +1,12 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType,   registerEnumType} from '@nestjs/graphql';
 import { User } from '../../users/models/user.model';
 import { BaseModel } from '../../common/models/base.model';
+import { Status } from '@prisma/client';
+
+registerEnumType(Status, {
+  name: 'Status',
+  description: 'Post status',
+});
 
 @ObjectType()
 export class Post extends BaseModel {
@@ -15,4 +21,8 @@ export class Post extends BaseModel {
 
   @Field(() => User, { nullable: true })
   author?: User | null;
+  
+  @Field(() => Status)
+  status: Status;
+
 }

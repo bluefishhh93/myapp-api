@@ -42,6 +42,7 @@ type Mutation {
   login(data: LoginInput!): Auth!
   refreshToken(token: JWT!): Token!
   signup(data: SignupInput!): Auth!
+  updatePost(data: UpdatePostInput!, id: PostIdArgs!): Post!
   updateUser(data: UpdateUserInput!): User!
 }
 
@@ -68,6 +69,7 @@ type Post {
   createdAt: DateTime!
   id: ID!
   published: Boolean!
+  status: Status!
   title: String!
 
   """Identifies the date and time when the object was last updated."""
@@ -85,17 +87,33 @@ type PostEdge {
   node: Post!
 }
 
+input PostIdArgs {
+  postId: String!
+}
+
 input PostOrder {
   direction: OrderDirection!
+  field: PostOrderField!
+}
+
+"""Properties by which post connections can be ordered."""
+enum PostOrderField {
+  content
+  createdAt
+  id
+  published
+  title
+  updatedAt
 }
 
 type Query {
   hello(name: String!): String!
   helloWorld: String!
   me: User!
-  post: Post!
+  post(id: String!): Post!
   publishedPosts(orderBy: PostOrder, query: String): PostConnection!
   userPosts: [Post!]!
+  users: [User!]!
 }
 
 """User role"""
@@ -109,6 +127,14 @@ input SignupInput {
   firstname: String
   lastname: String
   password: String!
+  role: Role! = USER
+}
+
+"""Post status"""
+enum Status {
+  ACTIVE
+  INACTIVE
+  PENDING
 }
 
 type Subscription {
@@ -123,21 +149,27 @@ type Token {
   refreshToken: JWT!
 }
 
+input UpdatePostInput {
+  content: String
+  published: Boolean
+  title: String
+}
+
 input UpdateUserInput {
   firstname: String
+  image: String
   lastname: String
 }
 
 type User {
-  """Identifies the date and time when the object was created."""
   createdAt: DateTime!
   email: String!
+  emailVerified: DateTime
   firstname: String
   id: ID!
+  image: String
   lastname: String
   posts: [Post!]
   role: Role!
-
-  """Identifies the date and time when the object was last updated."""
   updatedAt: DateTime!
 }

@@ -21,7 +21,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwordService: PasswordService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async createUser(payload: SignupInput): Promise<Token> {
     const hashedPassword = await this.passwordService.hashPassword(
@@ -53,23 +53,22 @@ export class AuthService {
 
   async login(email: string, password: string): Promise<Token> {
     const user = await this.prisma.user.findUnique({ where: { email } });
-
+  
     if (!user) {
       throw new NotFoundException(`No user found for email: ${email}`);
     }
-
-    const passwordValid = await this.passwordService.validatePassword(
-      password,
-      user.password,
-    );
-
+  
+    const passwordValid = await this.passwordService.validatePassword(password, user.password);
+  
     if (!passwordValid) {
       throw new BadRequestException('Invalid password');
     }
-
-    return this.generateTokens({
-      userId: user.id,
-    });
+  
+    if (!user.emailVerified) {
+      throw new UnauthorizedException('Email not verified');
+    }
+  
+    return this.generateTokens({ userId: user.id });
   }
 
   validateUser(userId: string): Promise<User> {
@@ -102,10 +101,11 @@ export class AuthService {
 
   refreshToken(token: string) {
     try {
+      console.log(token, 'refresh token');
       const { userId } = this.jwtService.verify(token, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
       });
-
+      console.log(userId, 'refresh access token');
       return this.generateTokens({
         userId,
       });

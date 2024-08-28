@@ -23,6 +23,12 @@ export class UsersResolver {
     private prisma: PrismaService,
   ) {}
 
+  @Query(() => [User])
+  @UseGuards(GqlAuthGuard)
+  async users() {
+    return this.usersService.findAll();
+  }
+
   @Query(() => User)
   async me(@UserEntity() user: User): Promise<User> {
     return user;
@@ -54,4 +60,5 @@ export class UsersResolver {
   posts(@Parent() author: User) {
     return this.prisma.user.findUnique({ where: { id: author.id } }).posts();
   }
+  
 }

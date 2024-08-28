@@ -12,7 +12,6 @@ import { LoginInput } from './dto/login.input';
 import { SignupInput } from './dto/signup.input';
 import { RefreshTokenInput } from './dto/refresh-token.input';
 import { User } from '../users/models/user.model';
-
 @Resolver(() => Auth)
 export class AuthResolver {
   constructor(private readonly auth: AuthService) {}
@@ -29,11 +28,13 @@ export class AuthResolver {
 
   @Mutation(() => Auth)
   async login(@Args('data') { email, password }: LoginInput) {
+    console.log(email);
+    console.log(password);
     const { accessToken, refreshToken } = await this.auth.login(
       email.toLowerCase(),
       password,
     );
-
+    console.log(accessToken, refreshToken);
     return {
       accessToken,
       refreshToken,

@@ -20,8 +20,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtDto): Promise<User> {
     const user = await this.authService.validateUser(payload.userId);
+
+    
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('User not found. Please create a new access token.');
     }
     return user;
   }

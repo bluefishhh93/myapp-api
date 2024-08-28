@@ -35,4 +35,16 @@ export class User extends BaseModel {
 
   @HideField()
   password: string;
+
+  @Field(() => String, { nullable: true })
+  image?: string;
+
+  @Field(() => Date, { nullable: true })
+  emailVerified?: Date;
+
+  @Field(() => Date)
+  createdAt: Date;
+
+  @Field(() => Date)
+  updatedAt: Date;
 }

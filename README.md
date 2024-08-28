@@ -478,4 +478,21 @@ providers: [
 
 After you configured the Interceptor and retrieved the `TOKEN` from storage your request will succeed on resolvers with `@UseGuards(GqlAuthGuard)`.
 
+```ts
+mutation Login {
+  login(data: { email: "damcaichetluon03@gmail.com", password: "123456789" }) {
+    accessToken
+    refreshToken
+    user {
+      id
+      email
+      firstname
+      lastname
+      image
+    }
+  }
+}
+
+```
+
 **[⬆ back to top](#overview)**

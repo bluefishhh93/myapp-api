@@ -22,4 +22,5 @@ fragment UserData on User {
   firstname
   lastname
   role
+  image
 }

@@ -25,6 +25,12 @@ query PublishedPostsConnection {
   }
 }
 
+mutation UpdatePost {
+  updatePost(id: "POST_ID", data: { title: "Updated Title", content: "Updated Content", published: true }) {
+    ...PostData
+  }
+}
+
 mutation CreatePost {
   createPost(data: { content: "Hello", title: "New Post" }) {
     ...PostData
