@@ -15,6 +15,8 @@ Table User {
   verifyEmailTokens VerifyEmailToken [not null]
   emailVerified DateTime
   image String
+  bookmarks Bookmark [not null]
+  interactions Interaction [not null]
 }
 
 Table Post {
@@ -27,6 +29,8 @@ Table Post {
   author User
   authorId String
   status Status [not null, default: 'INACTIVE']
+  bookmarks Bookmark [not null]
+  interactions Interaction [not null]
 }
 
 Table VerifyEmailToken {
@@ -36,6 +40,31 @@ Table VerifyEmailToken {
   user User [not null]
   createdAt DateTime [default: `now()`, not null]
   expiresAt DateTime [not null]
+}
+
+Table Bookmark {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  post Post [not null]
+  postId String [not null]
+
+  indexes {
+    (userId, postId) [unique]
+  }
+}
+
+Table Interaction {
+  id String [pk]
+  type InteractionType [not null]
+  user User [not null]
+  userId String [not null]
+  post Post [not null]
+  postId String [not null]
+
+  indexes {
+    (userId, postId, type) [unique]
+  }
 }
 
 Enum Role {
@@ -49,6 +78,18 @@ Enum Status {
   INACTIVE
 }
 
+Enum InteractionType {
+  HEART
+}
+
 Ref: Post.authorId > User.id
 
 Ref: VerifyEmailToken.userId > User.id [delete: Cascade]
+
+Ref: Bookmark.userId > User.id
+
+Ref: Bookmark.postId > Post.id
+
+Ref: Interaction.userId > User.id
+
+Ref: Interaction.postId > Post.id

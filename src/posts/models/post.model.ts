@@ -1,7 +1,9 @@
-import { Field, ObjectType,   registerEnumType} from '@nestjs/graphql';
+import { Field, Int, ObjectType,   registerEnumType} from '@nestjs/graphql';
 import { User } from '../../users/models/user.model';
 import { BaseModel } from '../../common/models/base.model';
 import { Status } from '@prisma/client';
+import { Bookmark } from '../../bookmarks/models/bookmark.model';
+import { Interaction } from '../../interactions/models/interaction.model';
 
 registerEnumType(Status, {
   name: 'Status',
@@ -25,4 +27,15 @@ export class Post extends BaseModel {
   @Field(() => Status)
   status: Status;
 
+  // @Field(() => [Bookmark], { nullable: true })
+  // bookmarks?: Bookmark[];
+
+  // @Field(() => [Interaction], { nullable: true })
+  // interactions?: Interaction[];
+
+  @Field(() => Int)
+  bookmarkCount: number;
+
+  @Field(() => Int)
+  heartCount: number;
 }

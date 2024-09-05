@@ -9,6 +9,8 @@ import { IsEmail } from 'class-validator';
 import { Post } from '../../posts/models/post.model';
 import { BaseModel } from '../../common/models/base.model';
 import { Role } from '@prisma/client';
+import { Bookmark } from '../../bookmarks/models/bookmark.model';
+import { Interaction } from '../../interactions/models/interaction.model';
 
 registerEnumType(Role, {
   name: 'Role',
@@ -47,4 +49,11 @@ export class User extends BaseModel {
 
   @Field(() => Date)
   updatedAt: Date;
+
+  // @Field(() => [Bookmark], { nullable: true })
+  // bookmarks?: [Bookmark];
+
+  // @Field(() => [Interaction], { nullable: true })
+  // interactions?: [Interaction];
+
 }

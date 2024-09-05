@@ -11,7 +11,6 @@ import {
 import { findManyCursorConnection } from '@devoxa/prisma-relay-cursor-connection';
 import { PubSub } from 'graphql-subscriptions';
 import { NotFoundException, UseGuards } from '@nestjs/common';
-import { PaginationArgs } from '../common/pagination/pagination.args';
 import { UserEntity } from '../common/decorators/user.decorator';
 import { User } from '../users/models/user.model';
 import { GqlAuthGuard } from '../auth/gql-auth.guard';
@@ -19,11 +18,12 @@ import { PostIdArgs } from './args/post-id.args';
 import { UserIdArgs } from './args/user-id.args';
 import { Post } from './models/post.model';
 import { PostConnection } from './models/post-connection.model';
-import { PostOrder } from './dto/post-order.input';
 import { CreatePostInput } from './dto/createPost.input';
 import { Logger } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { UpdatePostInput } from './dto/updatePost.input';
+import { UserPostsInput } from './dto/user-posts.input';
+import { PublishedPostsArgs } from './args/published-posts.args';
 
 const pubSub = new PubSub();
 
@@ -32,7 +32,7 @@ export class PostsResolver {
   private readonly logger = new Logger(PostsResolver.name);
   constructor(
     private prisma: PrismaService,
-    private postsService : PostsService
+    private postsService: PostsService
 
   ) { }
 
@@ -58,48 +58,65 @@ export class PostsResolver {
     pubSub.publish('postCreated', { postCreated: newPost });
     return newPost;
   }
-
   @Query(() => PostConnection)
-  async publishedPosts(
-    @Args() { after, before, first, last }: PaginationArgs,
-    @Args({ name: 'query', type: () => String, nullable: true })
-    query: string,
-    @Args({
-      name: 'orderBy',
-      type: () => PostOrder,
-      nullable: true,
-    })
-    orderBy: PostOrder,
-  ) {
-    const a = await findManyCursorConnection(
-      (args) =>
+  async publishedPosts(@Args() args: PublishedPostsArgs) {
+    const { after, before, first, last, query, orderBy } = args;
+
+    return await findManyCursorConnection(
+      (paginationArgs) =>
         this.prisma.post.findMany({
           include: { author: true },
           where: {
             published: true,
-            title: { contains: query || '' },
+            title: query ? { contains: query, mode: 'insensitive' } : undefined,
           },
-          orderBy: orderBy ? { [orderBy.field]: orderBy.direction } : undefined,
-          ...args,
+          orderBy: orderBy
+            ? [
+              { [orderBy.field]: orderBy.direction },
+              {
+                id: 'desc',
+              },
+            ]
+            : undefined,
+          ...paginationArgs,
         }),
       () =>
         this.prisma.post.count({
           where: {
             published: true,
-            title: { contains: query || '' },
+            title: query ? { contains: query, mode: 'insensitive' } : undefined,
           },
         }),
       { first, last, before, after },
     );
-    return a;
   }
 
   @Query(() => [Post])
-  userPosts(@Args() id: UserIdArgs) {
+  userPosts(@Args('input') input: UserPostsInput) {
+    const { userId, published, status } = input;
+    const where: any = {};
+    if (published !== undefined) {
+      where.published = published;
+    }
+    if (status) {
+      where.status = status;
+    }
+    console.log('where', where);
+    return this.prisma.user
+      .findUnique({ where: { id: userId } })
+      .posts({
+        where,
+        orderBy: {
+          updatedAt: 'desc',
+        }
+      });
+  }
+
+  @Query(() => [Post])
+  publishedUserPosts(@Args() id: UserIdArgs) {
     return this.prisma.user
       .findUnique({ where: { id: id.userId } })
       .posts({ where: { published: true } });
-
     // or
     // return this.prisma.posts.findMany({
     //   where: {
@@ -110,12 +127,29 @@ export class PostsResolver {
   }
 
   @Query(() => Post)
-  async post(@Args('id') id: string): Promise<Post> {
-    const post = await this.prisma.post.findUnique({ where: { id } });
+  async post(@Args('id') id: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+      include: {
+        bookmarks: true,
+        interactions: {
+          where: {
+            type: 'HEART'
+          }
+        },
+      }
+    });
+
     if (!post) {
       throw new NotFoundException(`Post with ID ${id} not found`);
     }
-    return post;
+
+    return {
+      ...post,
+      heartCount: post.interactions.length,
+      bookmarks: undefined,
+      // interactions: undefined,
+    };
   }
 
   @UseGuards(GqlAuthGuard)
@@ -123,7 +157,7 @@ export class PostsResolver {
   async updatePost(
     @Args('id') id: PostIdArgs,
     @Args('data') data: UpdatePostInput,
-  ): Promise<Post> {
+  ) {
     return this.postsService.updatePost(id, data);
   }
 

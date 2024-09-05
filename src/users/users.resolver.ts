@@ -23,6 +23,7 @@ export class UsersResolver {
     private prisma: PrismaService,
   ) {}
 
+  
   @Query(() => [User])
   @UseGuards(GqlAuthGuard)
   async users() {

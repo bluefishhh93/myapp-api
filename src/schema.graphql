@@ -26,6 +26,23 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type Interaction {
+  """Identifies the date and time when the object was created."""
+  createdAt: DateTime!
+  id: ID!
+  post: Post!
+  type: InteractionType!
+
+  """Identifies the date and time when the object was last updated."""
+  updatedAt: DateTime!
+  user: User!
+}
+
+"""The type of interaction"""
+enum InteractionType {
+  HEART
+}
+
 """
 A field whose value is a JSON Web Token (JWT): https://jwt.io/introduction.
 """
@@ -39,6 +56,7 @@ input LoginInput {
 type Mutation {
   changePassword(data: ChangePasswordInput!): User!
   createPost(data: CreatePostInput!): Post!
+  interactWithPost(postId: String!, type: InteractionType!): Interaction!
   login(data: LoginInput!): Auth!
   refreshToken(token: JWT!): Token!
   signup(data: SignupInput!): Auth!
@@ -63,10 +81,12 @@ type PageInfo {
 
 type Post {
   author: User
+  bookmarkCount: Int!
   content: String
 
   """Identifies the date and time when the object was created."""
   createdAt: DateTime!
+  heartCount: Int!
   id: ID!
   published: Boolean!
   status: Status!
@@ -91,6 +111,11 @@ input PostIdArgs {
   postId: String!
 }
 
+type PostInteraction {
+  heart: Int!
+  likedBy: [User!]!
+}
+
 input PostOrder {
   direction: OrderDirection!
   field: PostOrderField!
@@ -107,12 +132,16 @@ enum PostOrderField {
 }
 
 type Query {
+  bookmarkedPosts: [Post!]!
+  getUserInteractions(postId: String!): UserInteraction!
   hello(name: String!): String!
   helloWorld: String!
   me: User!
   post(id: String!): Post!
-  publishedPosts(orderBy: PostOrder, query: String): PostConnection!
-  userPosts: [Post!]!
+  postInteractions(postId: String!): PostInteraction!
+  publishedPosts(after: String, before: String, first: Int, last: Int, orderBy: PostOrder, query: String, skip: Int): PostConnection!
+  publishedUserPosts: [Post!]!
+  userPosts(input: UserPostsInput!): [Post!]!
   users: [User!]!
 }
 
@@ -152,6 +181,7 @@ type Token {
 input UpdatePostInput {
   content: String
   published: Boolean
+  status: Status
   title: String
 }
 
@@ -172,4 +202,15 @@ type User {
   posts: [Post!]
   role: Role!
   updatedAt: DateTime!
+}
+
+type UserInteraction {
+  bookmarked: Boolean!
+  hearted: Boolean!
+}
+
+input UserPostsInput {
+  published: Boolean
+  status: Status
+  userId: String!
 }
